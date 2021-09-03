@@ -1,5 +1,4 @@
 """Extracts data in a training friendly format for NER training."""
-import os
 import json
 import argparse
 from pathlib import Path
@@ -16,18 +15,19 @@ def get_raw_data(sourcepath):
     sourcepath: directory containing the .txt and .ann files
     """
     data = defaultdict(dict)
-    for filename in os.listdir(sourcepath):
-        root = filename[:-4]  # Given cc_onco972.txt, keeps cc_onco972
-        file_content = Path(f"{sourcepath}/{filename}").read_text()
-        if filename.endswith('txt'):
+    for filename in Path(sourcepath).iterdir():
+        root, suffix = filename.stem, filename.suffix  # Given cc_onco972.txt, keeps cc_onco972
+        file_content = Path(filename).read_text()
+        if suffix == ".txt":
             data[root]["text"] = file_content
-        if filename.endswith('ann'):
+        if suffix == ".ann":
             data[root]['ann'] = transform_entity_file(file_content)
     return data
 
 
 def transform_entity_file(labels):
-    """Gets and entity file (.ann) and returns a list of dictionaries.
+    """Gets an entity file contents (.ann)
+     and returns a list of dictionaries.
     Each dictionary is an entity with its
     label, begin index, end_index and actual text.
     """
@@ -55,13 +55,13 @@ def get_tokens_features(text, nlp, ner_tags=None):
         sid.append(token.idx)  # start index of the token
         dep.append(token.dep_)  # dep parsing
         lemma.append(token.lemma_)  # lemma of the token
-    ner = ["O"]*len(tokens)
+    ner = ["O"]*len(tokens)  # In case there are no entities
     if ner_tags:  # Evaluates to true for training data
         for id_, token in enumerate(tokens):
             # For each NER tag we have, validate if the current word is an entity
             # using the start and the end indexes of the data
             for label in ner_tags:
-                if sid[id_] >= label['begin_idx'] and sid[id_] < label['end_idx'] :
+                if (sid[id_] >= label['begin_idx']) and (sid[id_] < label['end_idx']):
                     # If the current token in between the tag limits, get IOB tag it!
                     ner[id_] = 'B-' + label['label'] if sid[id_] == label['begin_idx']\
                         else 'I-' + label['label']
