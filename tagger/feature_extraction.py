@@ -111,13 +111,13 @@ def define_arguments():
                         type=str,
                         default="meddoprof_data_processed.json",
                         help="File to write the processed data in training-friendly format.")
-    return parser
+    args = parser.parse_args()
+    return args
 
 
 def main():
     """CLI input"""
-    parser = define_arguments()
-    args = parser.parse_args()
+    args = define_arguments()
     data = get_raw_data(args.input_dir)
     data = get_training_format(data)
     with open(args.out_file, 'w', encoding='utf8') as out:
